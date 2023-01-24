@@ -3,8 +3,15 @@ import { nanoid } from 'nanoid';
 import { readFileSync } from 'fs';
 import { Interactable, TownEmitter, PosterSessionArea } from '../types/CoveyTownSocket';
 import TownsStore from '../lib/TownsStore';
-import { getLastEmittedEvent, mockPlayer, MockedPlayer, isPosterSessionArea } from '../TestUtils';
+import {
+  getLastEmittedEvent,
+  mockPlayer,
+  MockedPlayer,
+  isPosterSessionArea,
+  isViewingArea,
+} from '../TestUtils';
 import { TownsController } from './TownsController';
+import ViewingArea from './ViewingArea';
 
 type TestTownData = {
   friendlyName: string;
@@ -212,13 +219,86 @@ describe('TownsController integration tests', () => {
             sessionToken,
             newPosterSessionArea,
           );
-          const numStars = await controller.incrementPosterAreaStars(
+          let numStars = await controller.incrementPosterAreaStars(
             testingTown.townID,
             posterSessionArea.id,
             sessionToken,
           );
+          if (numStars < 1 || numStars > 5) {
+            fail('Expected number of stars to be in range (0-5)');
+          }
           expect(numStars).toEqual(newPosterSessionArea.stars + 1);
+          numStars = await controller.incrementPosterAreaStars(
+            testingTown.townID,
+            posterSessionArea.id,
+            sessionToken,
+          );
+          expect(numStars).toEqual(newPosterSessionArea.stars + 2);
         }
+      });
+      it('Returns an error message if trying to increment stars for an area that is not a PosterSessionArea', async () => {
+        const posterSessionArea = interactables.find(isViewingArea) as ViewingArea;
+        if (!posterSessionArea) {
+          fail('Expected at least one poster session area to be returned in the initial join data');
+        } else {
+          const newPosterSessionArea = {
+            id: posterSessionArea.id,
+            video: 'test',
+            isPlaying: true,
+            elapsedTimeSec: 42,
+          };
+          await controller.createViewingArea(
+            testingTown.townID,
+            sessionToken,
+            newPosterSessionArea,
+          );
+          await expect(
+            controller.incrementPosterAreaStars(
+              testingTown.townID,
+              newPosterSessionArea.id,
+              sessionToken,
+            ),
+          ).rejects.toThrow();
+        }
+      });
+      it('Checks for a valid session token before incrementing stars of a PosterSessionArea', async () => {
+        const invalidSessionToken = nanoid();
+        const posterSessionArea = interactables.find(isPosterSessionArea) as PosterSessionArea;
+        const newPosterSessionArea = {
+          id: posterSessionArea.id,
+          stars: 0,
+          title: 'Test title',
+          imageContents: readFileSync('testData/poster.jpg', 'utf-8'),
+        };
+        await expect(
+          controller.incrementPosterAreaStars(
+            testingTown.townID,
+            newPosterSessionArea.id,
+            invalidSessionToken,
+          ),
+        ).rejects.toThrow();
+      });
+      it('Returns an error message if the town ID is invalid when incrementing stars', async () => {
+        const posterSessionArea = interactables.find(isPosterSessionArea) as PosterSessionArea;
+        const newPosterSessionArea = {
+          id: posterSessionArea.id,
+          stars: 0,
+          title: 'Test title',
+          imageContents: readFileSync('testData/poster.jpg', 'utf-8'),
+        };
+        await expect(
+          controller.incrementPosterAreaStars(nanoid(), newPosterSessionArea.id, sessionToken),
+        ).rejects.toThrow();
+      });
+      it('Returns an error message if the PosterSessionArea does not exist when incrementing stars', async () => {
+        const posterSessionAreaID = nanoid();
+        await expect(
+          controller.incrementPosterAreaStars(
+            testingTown.townID,
+            posterSessionAreaID,
+            sessionToken,
+          ),
+        ).rejects.toThrow();
       });
       it('Gets the image contents of a poster session area', async () => {
         const posterSessionArea = interactables.find(isPosterSessionArea) as PosterSessionArea;
@@ -243,6 +323,70 @@ describe('TownsController integration tests', () => {
           );
           expect(imageContents).toEqual(newPosterSessionArea.imageContents);
         }
+      });
+      it('Returns an error message if trying to get image contents from an area that is not a PosterSessionArea', async () => {
+        const posterSessionArea = interactables.find(isViewingArea) as ViewingArea;
+        if (!posterSessionArea) {
+          fail('Expected at least one poster session area to be returned in the initial join data');
+        } else {
+          const newPosterSessionArea = {
+            id: posterSessionArea.id,
+            video: 'test',
+            isPlaying: true,
+            elapsedTimeSec: 42,
+          };
+          await controller.createViewingArea(
+            testingTown.townID,
+            sessionToken,
+            newPosterSessionArea,
+          );
+          await expect(
+            controller.getPosterAreaImageContents(
+              testingTown.townID,
+              newPosterSessionArea.id,
+              sessionToken,
+            ),
+          ).rejects.toThrow();
+        }
+      });
+      it('Checks for a valid session token before getting the image contents of a PosterSessionArea', async () => {
+        const invalidSessionToken = nanoid();
+        const posterSessionArea = interactables.find(isPosterSessionArea) as PosterSessionArea;
+        const newPosterSessionArea = {
+          id: posterSessionArea.id,
+          stars: 0,
+          title: 'Test title',
+          imageContents: readFileSync('testData/poster.jpg', 'utf-8'),
+        };
+        await expect(
+          controller.getPosterAreaImageContents(
+            testingTown.townID,
+            newPosterSessionArea.id,
+            invalidSessionToken,
+          ),
+        ).rejects.toThrow();
+      });
+      it('Returns an error message if the town ID is invalid when getting image contents', async () => {
+        const posterSessionArea = interactables.find(isPosterSessionArea) as PosterSessionArea;
+        const newPosterSessionArea = {
+          id: posterSessionArea.id,
+          stars: 0,
+          title: 'Test title',
+          imageContents: readFileSync('testData/poster.jpg', 'utf-8'),
+        };
+        await expect(
+          controller.getPosterAreaImageContents(nanoid(), newPosterSessionArea.id, sessionToken),
+        ).rejects.toThrow();
+      });
+      it('Returns an error message if the PosterSessionArea does not exist when trying to get image contents', async () => {
+        const posterSessionAreaID = nanoid();
+        await expect(
+          controller.getPosterAreaImageContents(
+            testingTown.townID,
+            posterSessionAreaID,
+            sessionToken,
+          ),
+        ).rejects.toThrow();
       });
     });
   });
