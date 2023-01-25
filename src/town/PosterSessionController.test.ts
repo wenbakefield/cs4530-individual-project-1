@@ -236,6 +236,26 @@ describe('TownsController integration tests', () => {
           expect(numStars).toEqual(newPosterSessionArea.stars + 2);
         }
       });
+      it('Returns an error message if trying to increment stars for a PosterSessionArea that has no image contents', async () => {
+        const posterSessionArea = interactables.find(isPosterSessionArea) as PosterSessionArea;
+        if (!posterSessionArea) {
+          fail('Expected at least one poster session area to be returned in the initial join data');
+        } else {
+          const newPosterSessionArea = {
+            id: posterSessionArea.id,
+            stars: 0,
+            title: 'Test title',
+            imageContents: '',
+          };
+          await expect(
+            controller.incrementPosterAreaStars(
+              testingTown.townID,
+              newPosterSessionArea.id,
+              sessionToken,
+            ),
+          ).rejects.toThrow();
+        }
+      });
       it('Returns an error message if trying to increment stars for an area that is not a PosterSessionArea', async () => {
         const posterSessionArea = interactables.find(isViewingArea) as ViewingArea;
         if (!posterSessionArea) {
