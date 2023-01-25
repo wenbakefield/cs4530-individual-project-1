@@ -1123,6 +1123,9 @@ describe('Town', () => {
     it('Throws an error if there are overlapping objects', async () => {
       expectInitializingFromMapToThrowError(testingMaps.overlapping);
     });
+    it('Throws an error if the map is empty', async () => {
+      expectInitializingFromMapToThrowError(testingMaps.empty);
+    });
     it('Creates a ConversationArea instance for each region on the map', async () => {
       town.initializeFromMap(testingMaps.twoConv);
       const conv1 = town.getInteractable('Name1');
