@@ -122,6 +122,25 @@ const testingMaps: TestMapDict = {
     type: 'map',
     layers: [],
   },
+  empty: {
+    tiledversion: '1.9.0',
+    tileheight: 32,
+    tilesets: [],
+    tilewidth: 32,
+    type: 'map',
+    layers: [
+      {
+        id: 4,
+        name: 'Objects',
+        objects: [],
+        opacity: 1,
+        type: 'objectgroup',
+        visible: true,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
   duplicateNames: {
     tiledversion: '1.9.0',
     tileheight: 32,
@@ -1123,7 +1142,7 @@ describe('Town', () => {
     it('Throws an error if there are overlapping objects', async () => {
       expectInitializingFromMapToThrowError(testingMaps.overlapping);
     });
-    it('Throws an error if the map is empty', async () => {
+    it('Throws an error if the objects layer is empty', async () => {
       expectInitializingFromMapToThrowError(testingMaps.empty);
     });
     it('Creates a ConversationArea instance for each region on the map', async () => {
