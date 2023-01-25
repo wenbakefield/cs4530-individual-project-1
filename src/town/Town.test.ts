@@ -654,6 +654,73 @@ describe('Town', () => {
         });
       });
     });
+    describe('[T1] interactableUpdate callback poster', () => {
+      let interactableUpdateHandler: (update: Interactable) => void;
+      beforeEach(() => {
+        town.initializeFromMap(testingMaps.twoConvTwoPosterSession);
+        interactableUpdateHandler = getEventListener(playerTestData.socket, 'interactableUpdate');
+      });
+      it('Should not throw an error for any interactable area that is not a poster session area', () => {
+        expect(() =>
+          interactableUpdateHandler({ id: 'Name1', topic: nanoid(), occupantsByID: [] }),
+        ).not.toThrowError();
+      });
+      it('Should not throw an error if there is no such poster session area', () => {
+        expect(() =>
+          interactableUpdateHandler({
+            id: 'NotActuallyAnInteractable',
+            topic: nanoid(),
+            occupantsByID: [],
+          }),
+        ).not.toThrowError();
+      });
+      describe('When called passing a valid poster session area', () => {
+        let newArea: PosterSessionAreaModel;
+        let secondPlayer: MockedPlayer;
+        beforeEach(async () => {
+          newArea = {
+            id: 'Name4',
+            imageContents: nanoid(),
+            title: nanoid(),
+            stars: 0,
+          };
+          expect(town.addPosterSessionArea(newArea)).toBe(true);
+          secondPlayer = mockPlayer(town.townID);
+          mockTwilioVideo.getTokenForTown.mockClear();
+          await town.addPlayer(secondPlayer.userName, secondPlayer.socket);
+
+          newArea.stars = 1;
+          mockClear(townEmitter);
+
+          mockClear(secondPlayer.socket);
+          mockClear(secondPlayer.socketToRoomMock);
+          interactableUpdateHandler(newArea);
+        });
+        it("Should emit the interactable update to the other players in the town using the player's townEmitter, after the viewing area was successfully created", () => {
+          const updatedArea = town.getInteractable(newArea.id);
+          expect(updatedArea.toModel()).toEqual(newArea);
+        });
+        it('Should update the model for the poster session area', () => {
+          const lastUpdate = getLastEmittedEvent(
+            playerTestData.socketToRoomMock,
+            'interactableUpdate',
+          );
+          expect(lastUpdate).toEqual(newArea);
+        });
+        it('Should not emit interactableUpdate events to players directly, or to the whole town', () => {
+          expect(() =>
+            getLastEmittedEvent(playerTestData.socket, 'interactableUpdate'),
+          ).toThrowError();
+          expect(() => getLastEmittedEvent(townEmitter, 'interactableUpdate')).toThrowError();
+          expect(() =>
+            getLastEmittedEvent(secondPlayer.socket, 'interactableUpdate'),
+          ).toThrowError();
+          expect(() =>
+            getLastEmittedEvent(secondPlayer.socketToRoomMock, 'interactableUpdate'),
+          ).toThrowError();
+        });
+      });
+    });
   });
   describe('Socket event listeners created in addPlayer', () => {
     describe('on socket disconnect', () => {
@@ -690,7 +757,6 @@ describe('Town', () => {
         expect(convArea.occupantsByID).toEqual([]);
         expect(town.occupancy).toBe(0);
       });
-
       it('Removes the player from any active viewing area', () => {
         // Load in a map with a conversation area
         town.initializeFromMap(testingMaps.twoConvOneViewing);
@@ -702,6 +768,23 @@ describe('Town', () => {
         expect(viewingArea.occupantsByID).toEqual([player.id]);
         disconnectPlayer(playerTestData);
         expect(viewingArea.occupantsByID).toEqual([]);
+      });
+      it('Removes the player from any active poster session area', () => {
+        // Load in a map with a conversation area
+        town.initializeFromMap(testingMaps.twoConvOnePosterSession);
+        playerTestData.moveTo(156, 567); // Inside of "Name3" area
+        expect(
+          town.addPosterSessionArea({
+            id: 'Name3',
+            stars: 0,
+            imageContents: nanoid(),
+            title: nanoid(),
+          }),
+        ).toBeTruthy();
+        const posterSessionArea = town.getInteractable('Name3');
+        expect(posterSessionArea.occupantsByID).toEqual([player.id]);
+        disconnectPlayer(playerTestData);
+        expect(posterSessionArea.occupantsByID).toEqual([]);
       });
     });
     describe('playerMovement', () => {
@@ -742,6 +825,39 @@ describe('Town', () => {
           isPlaying: true,
           elapsedTimeSec: 100,
           video: nanoid(),
+        };
+        interactableUpdateCallback(update);
+      });
+      it('forwards updates to others in the town', () => {
+        const lastEvent = getLastEmittedEvent(
+          playerTestData.socketToRoomMock,
+          'interactableUpdate',
+        );
+        expect(lastEvent).toEqual(update);
+      });
+      it('does not forward updates to the ENTIRE town', () => {
+        expect(
+          // getLastEmittedEvent will throw an error if no event was emitted, which we expect to be the case here
+          () => getLastEmittedEvent(townEmitter, 'interactableUpdate'),
+        ).toThrowError();
+      });
+      it('updates the local model for that interactable', () => {
+        const interactable = town.getInteractable(update.id);
+        expect(interactable?.toModel()).toEqual(update);
+      });
+    });
+    describe('interactableUpdate poster', () => {
+      let interactableUpdateCallback: (update: Interactable) => void;
+      let update: PosterSessionAreaModel;
+      beforeEach(async () => {
+        town.initializeFromMap(testingMaps.twoConvOnePosterSession);
+        playerTestData.moveTo(156, 567); // Inside of "Name3" viewing area
+        interactableUpdateCallback = getEventListener(playerTestData.socket, 'interactableUpdate');
+        update = {
+          id: 'Name3',
+          stars: 0,
+          imageContents: nanoid(),
+          title: nanoid(),
         };
         interactableUpdateCallback(update);
       });
@@ -1040,6 +1156,36 @@ describe('Town', () => {
     describe('Updating interactable state in playerMovements', () => {
       beforeEach(async () => {
         town.initializeFromMap(testingMaps.twoConvOneViewing);
+        playerTestData.moveTo(51, 121);
+        expect(town.addConversationArea({ id: 'Name1', topic: 'test', occupantsByID: [] })).toBe(
+          true,
+        );
+      });
+      it('Adds a player to a new interactable and sets their conversation label, if they move into it', async () => {
+        const newPlayer = mockPlayer(town.townID);
+        const newPlayerObj = await town.addPlayer(newPlayer.userName, newPlayer.socket);
+        newPlayer.moveTo(51, 121);
+
+        // Check that the player's location was updated
+        expect(newPlayerObj.location.interactableID).toEqual('Name1');
+
+        // Check that a movement event was emitted with the correct label
+        const lastEmittedMovement = getLastEmittedEvent(townEmitter, 'playerMoved');
+        expect(lastEmittedMovement.location.interactableID).toEqual('Name1');
+
+        // Check that the conversation area occupants was updated
+        const occupants = town.getInteractable('Name1').occupantsByID;
+        expectArraysToContainSameMembers(occupants, [newPlayerObj.id, player.id]);
+      });
+      it('Removes a player from their prior interactable and sets their conversation label, if they moved outside of it', () => {
+        expect(player.location.interactableID).toEqual('Name1');
+        playerTestData.moveTo(0, 0);
+        expect(player.location.interactableID).toBeUndefined();
+      });
+    });
+    describe('Updating interactable state in playerMovements poster', () => {
+      beforeEach(async () => {
+        town.initializeFromMap(testingMaps.twoConvOnePosterSession);
         playerTestData.moveTo(51, 121);
         expect(town.addConversationArea({ id: 'Name1', topic: 'test', occupantsByID: [] })).toBe(
           true,
