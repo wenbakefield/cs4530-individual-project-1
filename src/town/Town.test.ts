@@ -1142,8 +1142,8 @@ describe('Town', () => {
     it('Throws an error if there are overlapping objects', async () => {
       expectInitializingFromMapToThrowError(testingMaps.overlapping);
     });
-    it('Throws an error if the objects layer is empty', async () => {
-      expectInitializingFromMapToThrowError(testingMaps.empty);
+    it('Does NOT throw an error if the objects layer is empty', async () => {
+      expect(() => town.initializeFromMap(testingMaps.empty)).not.toThrowError();
     });
     it('Creates a ConversationArea instance for each region on the map', async () => {
       town.initializeFromMap(testingMaps.twoConv);

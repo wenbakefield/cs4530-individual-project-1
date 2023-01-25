@@ -378,9 +378,6 @@ export default class Town {
     if (!objectLayer) {
       throw new Error(`Unable to find objects layer in map`);
     }
-    if (objectLayer.objects.length === 0) {
-      throw new Error(`No objects present in objects layer`);
-    }
     const viewingAreas = objectLayer.objects
       .filter(eachObject => eachObject.type === 'ViewingArea')
       .map(eachViewingAreaObject =>
