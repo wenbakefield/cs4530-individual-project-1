@@ -904,12 +904,22 @@ describe('Town', () => {
     });
     it('Should return false if no area exists with that ID', () => {
       expect(
-        town.addPosterSessionArea({ id: nanoid(), stars: 0, imageContents: nanoid(), title: nanoid() }),
+        town.addPosterSessionArea({
+          id: nanoid(),
+          stars: 0,
+          imageContents: nanoid(),
+          title: nanoid(),
+        }),
       ).toBe(false);
     });
     it('Should return false if the requested image contents are empty', () => {
       expect(
-        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: undefined, title: nanoid() }),
+        town.addPosterSessionArea({
+          id: 'Name3',
+          stars: 0,
+          imageContents: undefined,
+          title: nanoid(),
+        }),
       ).toBe(false);
       expect(
         town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: '', title: nanoid() }),
@@ -917,7 +927,12 @@ describe('Town', () => {
     });
     it('Should return false if the requested title is empty', () => {
       expect(
-        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: undefined }),
+        town.addPosterSessionArea({
+          id: 'Name3',
+          stars: 0,
+          imageContents: nanoid(),
+          title: undefined,
+        }),
       ).toBe(false);
       expect(
         town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: '' }),
@@ -925,10 +940,20 @@ describe('Town', () => {
     });
     it('Should return false if the area is already active', () => {
       expect(
-        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: nanoid() }),
+        town.addPosterSessionArea({
+          id: 'Name3',
+          stars: 0,
+          imageContents: nanoid(),
+          title: nanoid(),
+        }),
       ).toBe(true);
       expect(
-        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: nanoid() }),
+        town.addPosterSessionArea({
+          id: 'Name3',
+          stars: 0,
+          imageContents: nanoid(),
+          title: nanoid(),
+        }),
       ).toBe(false);
     });
     describe('When successful', () => {
