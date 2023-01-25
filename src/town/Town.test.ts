@@ -18,6 +18,7 @@ import {
   PlayerLocation,
   TownEmitter,
   ViewingArea as ViewingAreaModel,
+  PosterSessionArea as PosterSessionAreaModel,
 } from '../types/CoveyTownSocket';
 import ConversationArea from './ConversationArea';
 import Town from './Town';
@@ -326,6 +327,201 @@ const testingMaps: TestMapDict = {
                 name: 'video',
                 type: 'string',
                 value: 'someURL',
+              },
+            ],
+            rotation: 0,
+            visible: true,
+            width: 326,
+            x: 600,
+            y: 1200,
+          },
+        ],
+        opacity: 1,
+        type: 'objectgroup',
+        visible: true,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+  twoPosterSession: {
+    tiledversion: '1.9.0',
+    tileheight: 32,
+    tilesets: [],
+    tilewidth: 32,
+    type: 'map',
+    layers: [
+      {
+        id: 4,
+        name: 'Objects',
+        objects: [
+          {
+            type: 'PosterSessionArea',
+            height: 237,
+            id: 39,
+            name: 'Name1',
+            rotation: 0,
+            visible: true,
+            width: 326,
+            x: 40,
+            y: 120,
+          },
+          {
+            type: 'PosterSessionArea',
+            height: 266,
+            id: 43,
+            name: 'Name2',
+            rotation: 0,
+            visible: true,
+            width: 467,
+            x: 612,
+            y: 120,
+          },
+        ],
+        opacity: 1,
+        type: 'objectgroup',
+        visible: true,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+  twoConvOnePosterSession: {
+    tiledversion: '1.9.0',
+    tileheight: 32,
+    tilesets: [],
+    tilewidth: 32,
+    type: 'map',
+    layers: [
+      {
+        id: 4,
+        name: 'Objects',
+        objects: [
+          {
+            type: 'ConversationArea',
+            height: 237,
+            id: 39,
+            name: 'Name1',
+            rotation: 0,
+            visible: true,
+            width: 326,
+            x: 40,
+            y: 120,
+          },
+          {
+            type: 'ConversationArea',
+            height: 266,
+            id: 43,
+            name: 'Name2',
+            rotation: 0,
+            visible: true,
+            width: 467,
+            x: 612,
+            y: 120,
+          },
+          {
+            type: 'PosterSessionArea',
+            height: 237,
+            id: 54,
+            name: 'Name3',
+            properties: [
+              {
+                name: 'imageContents',
+                type: 'string',
+                value: 'someContent',
+              },
+              {
+                name: 'title',
+                type: 'string',
+                value: 'someTitle',
+              },
+            ],
+            rotation: 0,
+            visible: true,
+            width: 326,
+            x: 155,
+            y: 566,
+          },
+        ],
+        opacity: 1,
+        type: 'objectgroup',
+        visible: true,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+  twoConvTwoPosterSession: {
+    tiledversion: '1.9.0',
+    tileheight: 32,
+    tilesets: [],
+    tilewidth: 32,
+    type: 'map',
+    layers: [
+      {
+        id: 4,
+        name: 'Objects',
+        objects: [
+          {
+            type: 'ConversationArea',
+            height: 237,
+            id: 39,
+            name: 'Name1',
+            rotation: 0,
+            visible: true,
+            width: 326,
+            x: 40,
+            y: 120,
+          },
+          {
+            type: 'ConversationArea',
+            height: 266,
+            id: 43,
+            name: 'Name2',
+            rotation: 0,
+            visible: true,
+            width: 467,
+            x: 612,
+            y: 120,
+          },
+          {
+            type: 'PosterSessionArea',
+            height: 237,
+            id: 54,
+            name: 'Name3',
+            properties: [
+              {
+                name: 'imageContents',
+                type: 'string',
+                value: 'someContent',
+              },
+              {
+                name: 'title',
+                type: 'string',
+                value: 'someTitle',
+              },
+            ],
+            rotation: 0,
+            visible: true,
+            width: 326,
+            x: 155,
+            y: 566,
+          },
+          {
+            type: 'PosterSessionArea',
+            height: 237,
+            id: 55,
+            name: 'Name4',
+            properties: [
+              {
+                name: 'imageContents',
+                type: 'string',
+                value: 'someContent',
+              },
+              {
+                name: 'title',
+                type: 'string',
+                value: 'someTitle',
               },
             ],
             rotation: 0,
@@ -702,7 +898,66 @@ describe('Town', () => {
       });
     });
   });
+  describe('[T1] addPosterSessionArea', () => {
+    beforeEach(async () => {
+      town.initializeFromMap(testingMaps.twoConvOnePosterSession);
+    });
+    it('Should return false if no area exists with that ID', () => {
+      expect(
+        town.addPosterSessionArea({ id: nanoid(), stars: 0, imageContents: nanoid(), title: nanoid() }),
+      ).toBe(false);
+    });
+    it('Should return false if the requested image contents are empty', () => {
+      expect(
+        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: undefined, title: nanoid() }),
+      ).toBe(false);
+      expect(
+        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: '', title: nanoid() }),
+      ).toBe(false);
+    });
+    it('Should return false if the requested title is empty', () => {
+      expect(
+        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: undefined }),
+      ).toBe(false);
+      expect(
+        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: '' }),
+      ).toBe(false);
+    });
+    it('Should return false if the area is already active', () => {
+      expect(
+        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: nanoid() }),
+      ).toBe(true);
+      expect(
+        town.addPosterSessionArea({ id: 'Name3', stars: 0, imageContents: nanoid(), title: nanoid() }),
+      ).toBe(false);
+    });
+    describe('When successful', () => {
+      const newModel: PosterSessionAreaModel = {
+        id: 'Name3',
+        stars: 0,
+        imageContents: nanoid(),
+        title: nanoid(),
+      };
+      beforeEach(() => {
+        playerTestData.moveTo(160, 570); // Inside of "Name3" area
+        expect(town.addPosterSessionArea(newModel)).toBe(true);
+      });
 
+      it('Should update the local model for that area', () => {
+        const posterSessionArea = town.getInteractable('Name3');
+        expect(posterSessionArea.toModel()).toEqual(newModel);
+      });
+
+      it('Should emit an interactableUpdate message', () => {
+        const lastEmittedUpdate = getLastEmittedEvent(townEmitter, 'interactableUpdate');
+        expect(lastEmittedUpdate).toEqual(newModel);
+      });
+      it('Should include any players in that area as occupants', () => {
+        const posterSessionArea = town.getInteractable('Name3');
+        expect(posterSessionArea.occupantsByID).toEqual([player.id]);
+      });
+    });
+  });
   describe('disconnectAllPlayers', () => {
     beforeEach(() => {
       town.disconnectAllPlayers();
@@ -745,6 +1000,16 @@ describe('Town', () => {
       expect(viewingArea1.boundingBox).toEqual({ x: 40, y: 120, height: 237, width: 326 });
       expect(viewingArea2.id).toEqual('Name2');
       expect(viewingArea2.boundingBox).toEqual({ x: 612, y: 120, height: 266, width: 467 });
+      expect(town.interactables.length).toBe(2);
+    });
+    it('Creates a PosterSessionArea instance for each region on the map', async () => {
+      town.initializeFromMap(testingMaps.twoPosterSession);
+      const posterSessionArea1 = town.getInteractable('Name1');
+      const posterSessionArea2 = town.getInteractable('Name2');
+      expect(posterSessionArea1.id).toEqual('Name1');
+      expect(posterSessionArea1.boundingBox).toEqual({ x: 40, y: 120, height: 237, width: 326 });
+      expect(posterSessionArea2.id).toEqual('Name2');
+      expect(posterSessionArea2.boundingBox).toEqual({ x: 612, y: 120, height: 266, width: 467 });
       expect(town.interactables.length).toBe(2);
     });
     describe('Updating interactable state in playerMovements', () => {
